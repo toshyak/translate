@@ -28,7 +28,7 @@ type awsTranslateResponse struct {
 
 // Translate returns translated text from AWS Translate service
 func Translate(text string) string {
-	request, err := buildAndSignHTTPRequest(text)
+	request, err := buildSignedHTTPRequest(text)
 	if err != nil {
 		log.Fatal("Cannot build HTTP request. ", err)
 	}
@@ -48,8 +48,10 @@ func Translate(text string) string {
 	return response.TranslatedText
 }
 
-func buildAndSignHTTPRequest(text string) (*http.Request, error) {
+func buildSignedHTTPRequest(text string) (*http.Request, error) {
+	// Build AWS regional enpoint https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
 	url := fmt.Sprintf("https://%s.%s.amazonaws.com/", awsService, awsRegion)
+
 	body := awsTranslateRequest{SourceLanguageCode: "en", TargetLanguageCode: "ru", Text: text}
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
@@ -57,6 +59,7 @@ func buildAndSignHTTPRequest(text string) (*http.Request, error) {
 		return nil, err
 	}
 	bodyReader := bytes.NewReader(bodyJSON)
+	// body will be set by v4.Signer.Sign function
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		log.Println("Cannot create http request for url " + url)
@@ -80,6 +83,7 @@ func signHTTPRequest(request *http.Request, body io.ReadSeeker) error {
 	request.Header.Add("Content-Type", "application/x-amz-json-1.1")
 	request.Header.Add("X-Amz-Date", signatureTimeFormatted)
 	request.Header.Add("X-Amz-Target", "AWSShineFrontendService_20170701.TranslateText")
+
 	_, err := requestSigner.Sign(request, body, awsService, awsRegion, signatureTime)
 	if err != nil {
 		return err
