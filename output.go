@@ -17,7 +17,8 @@ type alfredOutputItem struct {
 }
 
 func output(text string) {
-	item := alfredOutputItem{Title: text}
+	icon := map[string]string{"path": "aws_translate.png"}
+	item := alfredOutputItem{Title: text, Icon: icon}
 	output := alfredOutput{Items: []alfredOutputItem{item}}
 	outputJSON, _ := json.Marshal(output)
 	fmt.Print(string(outputJSON))
