@@ -27,8 +27,9 @@ type awsTranslateResponse struct {
 }
 
 // Translate returns translated text from AWS Translate service
-func Translate(text string) string {
-	request, err := buildSignedHTTPRequest(text)
+func Translate(text string, sourceLanguageCode string, targetLanguageCode string) string {
+	translateRequest := awsTranslateRequest{SourceLanguageCode: sourceLanguageCode, TargetLanguageCode: targetLanguageCode, Text: text}
+	request, err := buildSignedHTTPRequest(translateRequest)
 	if err != nil {
 		log.Fatal("Cannot build HTTP request. ", err)
 	}
@@ -48,14 +49,12 @@ func Translate(text string) string {
 	return response.TranslatedText
 }
 
-func buildSignedHTTPRequest(text string) (*http.Request, error) {
+func buildSignedHTTPRequest(translateRequest awsTranslateRequest) (*http.Request, error) {
 	// Build AWS regional enpoint https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
 	url := fmt.Sprintf("https://%s.%s.amazonaws.com/", awsService, awsRegion)
-
-	body := awsTranslateRequest{SourceLanguageCode: "en", TargetLanguageCode: "ru", Text: text}
-	bodyJSON, err := json.Marshal(body)
+	bodyJSON, err := json.Marshal(translateRequest)
 	if err != nil {
-		log.Println("Cannot marshal request body: " + body.Text)
+		log.Println("Cannot marshal request body: " + translateRequest.Text)
 		return nil, err
 	}
 	bodyReader := bytes.NewReader(bodyJSON)
