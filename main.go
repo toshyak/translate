@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -13,5 +12,5 @@ func main() {
 		log.Fatal("Pass translated text as an argument")
 	}
 	textToTranslate := strings.Join(os.Args[1:], " ")
-	fmt.Println(aws.Translate(textToTranslate))
+	output(aws.Translate(textToTranslate))
 }
