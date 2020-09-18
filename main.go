@@ -19,7 +19,9 @@ func main() {
 	}
 	textToTranslate := strings.Join(os.Args[1:], " ")
 	sourceLanguage := getSourceLanguage(textToTranslate)
-	output(aws.Translate(textToTranslate, sourceLanguage, translationDirections[sourceLanguage]))
+	translatedText := aws.Translate(textToTranslate, sourceLanguage, translationDirections[sourceLanguage])
+	out := newOutput()
+	out.add(translatedText, "", "aws")
 }
 
 func getSourceLanguage(text string) string {

@@ -17,10 +17,19 @@ type alfredOutputItem struct {
 	Icon     map[string]string `json:"icon"`
 }
 
-func output(text string) {
-	icon := map[string]string{"path": "aws_translate.png"}
-	item := alfredOutputItem{Title: text, Arg: text, Icon: icon}
-	output := alfredOutput{Items: []alfredOutputItem{item}}
-	outputJSON, _ := json.Marshal(output)
+var translationServiceIcons = map[string]string{
+	"aws": "aws_translate.png",
+}
+
+func newOutput() *alfredOutput {
+	var t alfredOutput
+	return &t
+}
+
+func (t *alfredOutput) add(text string, subtitle string, translationService string) {
+	icon := map[string]string{"path": translationServiceIcons[translationService]}
+	item := alfredOutputItem{Title: text, Arg: text, Subtitle: subtitle, Icon: icon}
+	t.Items = append(t.Items, item)
+	outputJSON, _ := json.Marshal(t)
 	fmt.Print(string(outputJSON))
 }
