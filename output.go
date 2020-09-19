@@ -18,7 +18,8 @@ type alfredOutputItem struct {
 }
 
 var translationServiceIcons = map[string]string{
-	"aws": "aws_translate.png",
+	"aws":     "aws_translate.png",
+	"speller": "speller_logo.png",
 }
 
 func newOutput() *alfredOutput {
