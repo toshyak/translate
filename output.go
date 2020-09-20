@@ -11,14 +11,17 @@ type alfredOutput struct {
 }
 
 type alfredOutputItem struct {
-	Title    string            `json:"title"`
-	Subtitle string            `json:"subtitle"`
-	Arg      string            `json:"arg"`
-	Icon     map[string]string `json:"icon"`
+	Title        string            `json:"title"`
+	Subtitle     string            `json:"subtitle"`
+	Arg          string            `json:"arg"`
+	Valid        bool              `json:"valid"`
+	Autocomplete string            `json:"autocomplete"`
+	Icon         map[string]string `json:"icon"`
 }
 
 var translationServiceIcons = map[string]string{
-	"aws": "aws_translate.png",
+	"aws":     "aws_translate.png",
+	"speller": "speller_logo.png",
 }
 
 func newOutput() *alfredOutput {
@@ -26,10 +29,19 @@ func newOutput() *alfredOutput {
 	return &t
 }
 
-func (t *alfredOutput) add(text string, subtitle string, translationService string) {
-	icon := map[string]string{"path": translationServiceIcons[translationService]}
-	item := alfredOutputItem{Title: text, Arg: text, Subtitle: subtitle, Icon: icon}
-	t.Items = append(t.Items, item)
+func (t *alfredOutput) print() {
 	outputJSON, _ := json.Marshal(t)
-	fmt.Print(string(outputJSON))
+	fmt.Println(string(outputJSON))
+}
+
+func (t *alfredOutput) add(text string, subtitle string, translationService string, isValid bool) {
+	icon := map[string]string{"path": translationServiceIcons[translationService]}
+	item := alfredOutputItem{
+		Title:        text,
+		Arg:          text,
+		Valid:        isValid,
+		Autocomplete: text,
+		Subtitle:     subtitle,
+		Icon:         icon}
+	t.Items = append(t.Items, item)
 }

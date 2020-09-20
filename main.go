@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"toshyak/translate/aws"
+	"toshyak/translate/spelling"
 	"unicode"
 )
 
@@ -19,9 +20,17 @@ func main() {
 	}
 	textToTranslate := strings.Join(os.Args[1:], " ")
 	sourceLanguage := getSourceLanguage(textToTranslate)
+	spellingSuggestions, err := spelling.CheckSpelling(textToTranslate, sourceLanguage)
+	if err != nil {
+		log.Println("Failed to check spelling", err)
+	}
 	translatedText := aws.Translate(textToTranslate, sourceLanguage, translationDirections[sourceLanguage])
 	out := newOutput()
-	out.add(translatedText, "", "aws")
+	for _, s := range spellingSuggestions {
+		out.add(s, "", "speller", false)
+	}
+	out.add(translatedText, "", "aws", true)
+	out.print()
 }
 
 func getSourceLanguage(text string) string {
