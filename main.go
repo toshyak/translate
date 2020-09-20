@@ -27,9 +27,9 @@ func main() {
 	translatedText := aws.Translate(textToTranslate, sourceLanguage, translationDirections[sourceLanguage])
 	out := newOutput()
 	for _, s := range spellingSuggestions {
-		out.add(s, "", "speller")
+		out.add(s, "", "speller", false)
 	}
-	out.add(translatedText, "", "aws")
+	out.add(translatedText, "", "aws", true)
 	out.print()
 }
 
