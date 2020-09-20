@@ -30,6 +30,7 @@ func main() {
 		out.add(s, "", "speller")
 	}
 	out.add(translatedText, "", "aws")
+	out.print()
 }
 
 func getSourceLanguage(text string) string {

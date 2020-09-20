@@ -27,10 +27,13 @@ func newOutput() *alfredOutput {
 	return &t
 }
 
+func (t *alfredOutput) print() {
+	outputJSON, _ := json.Marshal(t)
+	fmt.Println(string(outputJSON))
+}
+
 func (t *alfredOutput) add(text string, subtitle string, translationService string) {
 	icon := map[string]string{"path": translationServiceIcons[translationService]}
 	item := alfredOutputItem{Title: text, Arg: text, Subtitle: subtitle, Icon: icon}
 	t.Items = append(t.Items, item)
-	outputJSON, _ := json.Marshal(t)
-	fmt.Print(string(outputJSON))
 }
