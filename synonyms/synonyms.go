@@ -12,21 +12,17 @@ import (
 
 const apiKey = "dict.1.1.20200909T155527Z.0357057f50984cf2.ca5e23a000b42b928facbd62b402878616ad6fa3"
 
-type synonym struct {
-	Text string `json:"text"`
-}
-
 type translation struct {
-	Text     string    `json:"text"`
-	Synonyms []synonym `json:"syn"`
-}
-
-type definition struct {
-	Translations []translation `json:"tr"`
+	Text     string `json:"text"`
+	Synonyms []struct {
+		Text string `json:"text"`
+	} `json:"syn"`
 }
 
 type dictResponse struct {
-	Definitions []definition `json:"def"`
+	Definitions []struct {
+		Translations []translation `json:"tr"`
+	} `json:"def"`
 }
 
 // TranslateWithSynonyms returns text translation with synonyms
