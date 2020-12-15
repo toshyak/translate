@@ -26,9 +26,21 @@ type awsTranslateResponse struct {
 	TranslatedText string
 }
 
+// Translator pbject
+type Translator struct {
+	sourceLanguageCode string
+	targetLanguageCode string
+}
+
+// NewTranslator creates new translator object
+func NewTranslator(sourceLanguageCode string, targetLanguageCode string) *Translator {
+	t := Translator{sourceLanguageCode, targetLanguageCode}
+	return &t
+}
+
 // Translate returns translated text from AWS Translate service
-func Translate(text string, sourceLanguageCode string, targetLanguageCode string) string {
-	translateRequest := awsTranslateRequest{SourceLanguageCode: sourceLanguageCode, TargetLanguageCode: targetLanguageCode, Text: text}
+func (t *Translator) Translate(text string) []string {
+	translateRequest := awsTranslateRequest{SourceLanguageCode: t.sourceLanguageCode, TargetLanguageCode: t.targetLanguageCode, Text: text}
 	request, err := buildSignedHTTPRequest(translateRequest)
 	if err != nil {
 		log.Fatal("Cannot build HTTP request. ", err)
@@ -46,7 +58,7 @@ func Translate(text string, sourceLanguageCode string, targetLanguageCode string
 	if err != nil {
 		log.Fatal("Cannot decode response body", err)
 	}
-	return response.TranslatedText
+	return []string{response.TranslatedText}
 }
 
 func buildSignedHTTPRequest(translateRequest awsTranslateRequest) (*http.Request, error) {

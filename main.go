@@ -15,6 +15,10 @@ var translationDirections = map[string]string{
 	"en": "ru",
 }
 
+type tranaslator interface {
+	Translate(string) []string
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Pass translated text as an argument")
@@ -25,13 +29,16 @@ func main() {
 	if err != nil {
 		log.Println("Failed to check spelling", err)
 	}
-	translatedText := aws.Translate(textToTranslate, sourceLanguage, translationDirections[sourceLanguage])
+	awsTranslator := aws.NewTranslator(sourceLanguage, translationDirections[sourceLanguage])
+	translatedText := awsTranslator.Translate(textToTranslate)
 	translatedTextWithSynonyms, err := synonyms.TranslateWithSynonyms(textToTranslate, sourceLanguage, translationDirections[sourceLanguage])
 	out := newOutput()
 	for _, s := range spellingSuggestions {
 		out.add(s, "", "speller", false)
 	}
-	out.add(translatedText, "", "aws", true)
+	for _, s := range translatedText {
+		out.add(s, "", "aws", true)
+	}
 	for _, s := range translatedTextWithSynonyms {
 		out.add(s, "", "ydict", true)
 	}
