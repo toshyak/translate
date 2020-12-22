@@ -6,17 +6,17 @@ import (
 	"strings"
 	"toshyak/translate/aws"
 	"toshyak/translate/spelling"
-	"toshyak/translate/synonyms"
+	yadictionary "toshyak/translate/yaDictionary"
 	"unicode"
 )
+
+type tranaslator interface {
+	Translate(string) ([]string, error)
+}
 
 var translationDirections = map[string]string{
 	"ru": "en",
 	"en": "ru",
-}
-
-type tranaslator interface {
-	Translate(string) []string
 }
 
 func main() {
@@ -30,8 +30,9 @@ func main() {
 		log.Println("Failed to check spelling", err)
 	}
 	awsTranslator := aws.NewTranslator(sourceLanguage, translationDirections[sourceLanguage])
-	translatedText := awsTranslator.Translate(textToTranslate)
-	translatedTextWithSynonyms, err := synonyms.TranslateWithSynonyms(textToTranslate, sourceLanguage, translationDirections[sourceLanguage])
+	translatedText, err := awsTranslator.Translate(textToTranslate)
+	yaDictTranslator := yadictionary.NewTranslator(sourceLanguage, translationDirections[sourceLanguage])
+	translatedTextWithSynonyms, err := yaDictTranslator.Translate(textToTranslate)
 	out := newOutput()
 	for _, s := range spellingSuggestions {
 		out.add(s, "", "speller", false)

@@ -26,7 +26,7 @@ type awsTranslateResponse struct {
 	TranslatedText string
 }
 
-// Translator pbject
+// Translator object
 type Translator struct {
 	sourceLanguageCode string
 	targetLanguageCode string
@@ -39,26 +39,29 @@ func NewTranslator(sourceLanguageCode string, targetLanguageCode string) *Transl
 }
 
 // Translate returns translated text from AWS Translate service
-func (t *Translator) Translate(text string) []string {
+func (t *Translator) Translate(text string) ([]string, error) {
 	translateRequest := awsTranslateRequest{SourceLanguageCode: t.sourceLanguageCode, TargetLanguageCode: t.targetLanguageCode, Text: text}
 	request, err := buildSignedHTTPRequest(translateRequest)
 	if err != nil {
-		log.Fatal("Cannot build HTTP request. ", err)
+		log.Println("Cannot build HTTP request. ", err)
+		return nil, err
 	}
 
 	httpCallTimeout, _ := time.ParseDuration("30s")
 	client := &http.Client{Timeout: httpCallTimeout}
 	resp, err := client.Do(request)
 	if err != nil {
-		log.Fatal("Failed to make HTTP request to AWS translate API. ", err)
+		log.Println("Failed to make HTTP request to AWS translate API. ", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 	var response awsTranslateResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		log.Fatal("Cannot decode response body", err)
+		log.Println("Cannot decode response body", err)
+		return nil, err
 	}
-	return []string{response.TranslatedText}
+	return []string{response.TranslatedText}, nil
 }
 
 func buildSignedHTTPRequest(translateRequest awsTranslateRequest) (*http.Request, error) {

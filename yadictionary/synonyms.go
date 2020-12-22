@@ -1,4 +1,4 @@
-package synonyms
+package yadictionary
 
 // https://yandex.ru/dev/dictionary/doc/dg/reference/lookup.html
 
@@ -25,9 +25,21 @@ type dictResponse struct {
 	} `json:"def"`
 }
 
-// TranslateWithSynonyms returns text translation with synonyms
-func TranslateWithSynonyms(text string, sourceLanguageCode string, targetLanguageCode string) ([]string, error) {
-	translationDirection := fmt.Sprintf("%s-%s", sourceLanguageCode, targetLanguageCode)
+// Translator object
+type Translator struct {
+	sourceLanguageCode string
+	targetLanguageCode string
+}
+
+// NewTranslator creates new translator object
+func NewTranslator(sourceLanguageCode string, targetLanguageCode string) *Translator {
+	t := Translator{sourceLanguageCode, targetLanguageCode}
+	return &t
+}
+
+// Translate returns text translation with synonyms
+func (t *Translator) Translate(text string) ([]string, error) {
+	translationDirection := fmt.Sprintf("%s-%s", t.sourceLanguageCode, t.targetLanguageCode)
 	request, err := buildSpellingRequest(text, translationDirection)
 	if err != nil {
 		return nil, err
