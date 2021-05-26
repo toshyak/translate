@@ -1,4 +1,4 @@
-package synonyms
+package yadictionary
 
 // https://yandex.ru/dev/dictionary/doc/dg/reference/lookup.html
 
@@ -25,19 +25,38 @@ type dictResponse struct {
 	} `json:"def"`
 }
 
-// TranslateWithSynonyms returns text translation with synonyms
-func TranslateWithSynonyms(text string, sourceLanguageCode string, targetLanguageCode string) ([]string, error) {
-	translationDirection := fmt.Sprintf("%s-%s", sourceLanguageCode, targetLanguageCode)
+// Translator object
+type Translator struct {
+	sourceLanguageCode string
+	targetLanguageCode string
+}
+
+// NewTranslator creates new translator object
+func NewTranslator(sourceLanguageCode string, targetLanguageCode string) *Translator {
+	t := Translator{sourceLanguageCode, targetLanguageCode}
+	return &t
+}
+
+// Translate returns text translation with synonyms
+func (t *Translator) Translate(text string) <-chan string {
+	out := make(chan string)
+	go doTranslate(*t, text, out)
+	return out
+}
+
+func doTranslate(t Translator, text string, out chan string) {
+	defer close(out)
+	translationDirection := fmt.Sprintf("%s-%s", t.sourceLanguageCode, t.targetLanguageCode)
 	request, err := buildSpellingRequest(text, translationDirection)
 	if err != nil {
-		return nil, err
+		return
 	}
 	httpCallTimeout, _ := time.ParseDuration("30s")
 	client := &http.Client{Timeout: httpCallTimeout}
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Println("Failed to make HTTP request to Yandex Dictionary:", err)
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
@@ -45,7 +64,7 @@ func TranslateWithSynonyms(text string, sourceLanguageCode string, targetLanguag
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		log.Println("Cannot decode response body:", err)
-		return nil, err
+		return
 	}
 
 	var translations []string
@@ -57,9 +76,11 @@ func TranslateWithSynonyms(text string, sourceLanguageCode string, targetLanguag
 				translations = append(translations, syn.Text)
 			}
 		}
-
 	}
-	return translations, nil
+	for _, s := range translations {
+		out <- s
+	}
+	return
 }
 
 func buildSpellingRequest(text string, translationDirection string) (*http.Request, error) {
