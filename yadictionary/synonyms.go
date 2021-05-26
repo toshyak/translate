@@ -38,18 +38,25 @@ func NewTranslator(sourceLanguageCode string, targetLanguageCode string) *Transl
 }
 
 // Translate returns text translation with synonyms
-func (t *Translator) Translate(text string) ([]string, error) {
+func (t *Translator) Translate(text string) <-chan string {
+	out := make(chan string)
+	go doTranslate(*t, text, out)
+	return out
+}
+
+func doTranslate(t Translator, text string, out chan string) {
+	defer close(out)
 	translationDirection := fmt.Sprintf("%s-%s", t.sourceLanguageCode, t.targetLanguageCode)
 	request, err := buildSpellingRequest(text, translationDirection)
 	if err != nil {
-		return nil, err
+		return
 	}
 	httpCallTimeout, _ := time.ParseDuration("30s")
 	client := &http.Client{Timeout: httpCallTimeout}
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Println("Failed to make HTTP request to Yandex Dictionary:", err)
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
@@ -57,7 +64,7 @@ func (t *Translator) Translate(text string) ([]string, error) {
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		log.Println("Cannot decode response body:", err)
-		return nil, err
+		return
 	}
 
 	var translations []string
@@ -69,9 +76,11 @@ func (t *Translator) Translate(text string) ([]string, error) {
 				translations = append(translations, syn.Text)
 			}
 		}
-
 	}
-	return translations, nil
+	for _, s := range translations {
+		out <- s
+	}
+	return
 }
 
 func buildSpellingRequest(text string, translationDirection string) (*http.Request, error) {

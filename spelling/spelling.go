@@ -20,10 +20,18 @@ type spellingError struct {
 
 // CheckSpelling checks spelling of text written in lang
 // https://yandex.ru/dev/speller/doc/dg/reference/checkText-docpage/
-func CheckSpelling(text string, lang string) ([]string, error) {
+func CheckSpelling(text string, lang string) <-chan string {
+	out := make(chan string)
+	go doCheck(text, lang, out)
+	return out
+}
+
+func doCheck(text string, lang string, out chan string) {
+	defer close(out)
 	request, err := buildSpellingRequest(text, lang)
 	if err != nil {
-		return nil, err
+		log.Println("Cannot build request for spelling suggestions:", err)
+		return
 	}
 
 	httpCallTimeout, _ := time.ParseDuration("30s")
@@ -31,7 +39,7 @@ func CheckSpelling(text string, lang string) ([]string, error) {
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Println("Failed to make HTTP request to Yandex Speller:", err)
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
@@ -39,23 +47,21 @@ func CheckSpelling(text string, lang string) ([]string, error) {
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		log.Println("Cannot decode response body:", err)
-		return nil, err
+		return
 	}
 
-	var suggestions []string
 	if len(response) == 1 {
 		// return all suggestions for the single error
 		spellingError := response[0]
 		for _, s := range spellingError.Suggestion {
-			suggestions = append(suggestions, strings.ReplaceAll(text, string(spellingError.Word), string(s)))
+			out <- strings.ReplaceAll(text, string(spellingError.Word), string(s))
 		}
 	} else if len(response) > 1 {
 		// return only first suggestion for multiple errors
 		for _, spellingError := range response {
-			suggestions = append(suggestions, strings.ReplaceAll(text, string(spellingError.Word), string(spellingError.Suggestion[0])))
+			out <- strings.ReplaceAll(text, string(spellingError.Word), string(spellingError.Suggestion[0]))
 		}
 	}
-	return suggestions, nil
 }
 
 func buildSpellingRequest(text string, lang string) (*http.Request, error) {

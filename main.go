@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"toshyak/translate/aws"
 	"toshyak/translate/spelling"
 	yadictionary "toshyak/translate/yaDictionary"
@@ -11,7 +12,7 @@ import (
 )
 
 type tranaslator interface {
-	Translate(string) ([]string, error)
+	Translate(string) chan string
 }
 
 var translationDirections = map[string]string{
@@ -25,24 +26,38 @@ func main() {
 	}
 	textToTranslate := strings.Join(os.Args[1:], " ")
 	sourceLanguage := getSourceLanguage(textToTranslate)
-	spellingSuggestions, err := spelling.CheckSpelling(textToTranslate, sourceLanguage)
-	if err != nil {
-		log.Println("Failed to check spelling", err)
-	}
+	spellingCh := spelling.CheckSpelling(textToTranslate, sourceLanguage)
 	awsTranslator := aws.NewTranslator(sourceLanguage, translationDirections[sourceLanguage])
-	translatedText, err := awsTranslator.Translate(textToTranslate)
+	awsCh := awsTranslator.Translate(textToTranslate)
 	yaDictTranslator := yadictionary.NewTranslator(sourceLanguage, translationDirections[sourceLanguage])
-	translatedTextWithSynonyms, err := yaDictTranslator.Translate(textToTranslate)
+	yaCh := yaDictTranslator.Translate(textToTranslate)
+
 	out := newOutput()
-	for _, s := range spellingSuggestions {
-		out.add(s, "", "speller", false)
-	}
-	for _, s := range translatedText {
-		out.add(s, "", "aws", true)
-	}
-	for _, s := range translatedTextWithSynonyms {
-		out.add(s, "", "ydict", true)
-	}
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		for s := range spellingCh {
+			out.add(s, "", "speller", false)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		for s := range yaCh {
+			out.add(s, "", "ydict", true)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		for s := range awsCh {
+			out.add(s, "", "aws", true)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 	out.print()
 }
 
