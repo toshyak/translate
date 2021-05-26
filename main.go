@@ -7,7 +7,7 @@ import (
 	"sync"
 	"toshyak/translate/aws"
 	"toshyak/translate/spelling"
-	yadictionary "toshyak/translate/yaDictionary"
+	"toshyak/translate/yadictionary"
 	"unicode"
 )
 
