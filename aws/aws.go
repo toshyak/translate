@@ -50,7 +50,7 @@ func doTranslate(translateRequest awsTranslateRequest, out chan string) {
 	defer close(out)
 	request, err := buildSignedHTTPRequest(translateRequest)
 	if err != nil {
-		log.Println("Cannot build HTTP request. ", err)
+		log.Println("Cannot build HTTP request: ", err)
 		return
 	}
 
@@ -58,14 +58,14 @@ func doTranslate(translateRequest awsTranslateRequest, out chan string) {
 	client := &http.Client{Timeout: httpCallTimeout}
 	resp, err := client.Do(request)
 	if err != nil {
-		log.Println("Failed to make HTTP request to AWS translate API. ", err)
+		log.Println("Failed to make HTTP request to AWS translate API: ", err)
 		return
 	}
 	defer resp.Body.Close()
 	var response awsTranslateResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		log.Println("Cannot decode response body", err)
+		log.Println("Cannot decode response body: ", err)
 		return
 	}
 	out <- response.TranslatedText
@@ -83,12 +83,12 @@ func buildSignedHTTPRequest(translateRequest awsTranslateRequest) (*http.Request
 	// body will be set by v4.Signer.Sign function
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
-		log.Println("Cannot create http request for url " + url)
+		log.Println("Cannot create http request for url: " + url)
 		return nil, err
 	}
 	err = signHTTPRequest(request, bodyReader)
 	if err != nil {
-		log.Println("Cannot sign HTTP request", err)
+		log.Println("Cannot sign HTTP request: ", err)
 		return nil, err
 	}
 	return request, nil
@@ -96,6 +96,12 @@ func buildSignedHTTPRequest(translateRequest awsTranslateRequest) (*http.Request
 
 func signHTTPRequest(request *http.Request, body io.ReadSeeker) error {
 	creds := credentials.NewEnvCredentials()
+	val, err := creds.Get()
+	if err != nil || val.HasKeys() == false {
+		log.Println("Cannot get AWS credentials: ", err)
+		return err
+	}
+
 	requestSigner := v4.NewSigner(creds)
 
 	signatureTime := time.Now()
@@ -105,7 +111,7 @@ func signHTTPRequest(request *http.Request, body io.ReadSeeker) error {
 	request.Header.Add("X-Amz-Date", signatureTimeFormatted)
 	request.Header.Add("X-Amz-Target", "AWSShineFrontendService_20170701.TranslateText")
 
-	_, err := requestSigner.Sign(request, body, awsService, awsRegion, signatureTime)
+	_, err = requestSigner.Sign(request, body, awsService, awsRegion, signatureTime)
 	if err != nil {
 		return err
 	}
