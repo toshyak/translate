@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -60,6 +61,12 @@ func doTranslate(t Translator, text string, out chan string) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		log.Println("Got a non 200 HTTP response code from Yandex Dictionary")
+		log.Println("Response code received:", resp.StatusCode)
+		return
+	}
+
 	var response dictResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
@@ -80,13 +87,16 @@ func doTranslate(t Translator, text string, out chan string) {
 	for _, s := range translations {
 		out <- s
 	}
-	return
 }
 
 func buildSpellingRequest(text string, translationDirection string) (*http.Request, error) {
 	requestURL := "https://dictionary.yandex.net/api/v1/dicservice.json/lookup"
-	requestParams := fmt.Sprintf("?key=%s&lang=%s&flags=12&text=%s", apiKey, translationDirection, text)
-	request, err := http.NewRequest("GET", requestURL+requestParams, nil)
+	v := url.Values{}
+	v.Add("key", apiKey)
+	v.Add("lang", translationDirection)
+	v.Add("flags", "12")
+	v.Add("text", text)
+	request, err := http.NewRequest("GET", requestURL+"?"+v.Encode(), nil)
 	if err != nil {
 		log.Println("Cannot create http request for url " + requestURL)
 		return nil, err
